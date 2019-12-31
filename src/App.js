@@ -1,69 +1,50 @@
 import React, { Component } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 
+import { formatColumns, formatData } from 'ConveyorScroll/utils'
+
+import columnDefsModel from './columnDefsModel'
 import data from './data'
-import Scroll from './components1/Scroll'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
-import { secator } from './components1/Scroll/utils'
 
 class App extends Component {
   constructor(props) {
     super(props)
-    this.myRef = React.createRef()
     this.state = {
-      pageCount: 0,
-      perPage: 5,
-      columnDefs: [
-        {
-          headerName: 'Make',
-          field: 'make',
-        },
-        {
-          headerName: 'Model',
-          field: 'model',
-        },
-        {
-          headerName: 'Price',
-          field: 'price',
-        },
-      ],
+      rowsPerPage: 5,
+      columnDefs: [],
       rowData: [],
     }
   }
-  perPage = 5
 
-  handleRowDataChange = (beginNumber, number) => {
-    console.log(beginNumber, number)
-    this.setState({ rowData: secator(data, beginNumber, number) })
+  componentDidMount() {
+    this.preRenderFunction()
+  }
+
+  preRenderFunction = () => {
+    const { rowsPerPage } = this.state
+    const pageCount = Math.ceil(data.length / rowsPerPage)
+
+    this.setState({
+      columnDefs: formatColumns(columnDefsModel, pageCount),
+      rowData: formatData(data, rowsPerPage, pageCount),
+    })
   }
 
   render() {
-    return (
-      <div>
-        <div
-          ref={this.myRef}
-          className="ag-theme-balham"
-          style={{
-            height: '175px',
-            width: '600px',
-          }}
-        >
-          <AgGridReact
-            columnDefs={this.state.columnDefs}
-            rowData={this.state.rowData}
-            gridOptions={{
-              suppressHorizontalScroll: true,
-            }}
-          />
-        </div>
+    const { columnDefs, rowData } = this.state
 
-        <Scroll
-          max={Math.floor(data.length / this.state.perPage) - 1}
-          handleRowDataChange={this.handleRowDataChange}
-          perPage={this.perPage}
-        />
+    return (
+      <div
+        className="ag-theme-balham"
+        style={{
+          height: '300px',
+          width: '1000px',
+        }}
+      >
+        <AgGridReact columnDefs={columnDefs} rowData={rowData} />
       </div>
     )
   }
