@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 
-import { formatColumns, formatData } from 'ConveyorScroll/utils'
+import { formatColumns, formatData } from 'ColumnGroupScroll/utils'
+import columnDefsModel from 'ColumnGroupScroll/columnDefsModel'
 
-import columnDefsModel from './columnDefsModel'
 import data from './data'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
