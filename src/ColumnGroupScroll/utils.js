@@ -29,11 +29,14 @@ export const formatColumns = (columns, pageCount) => {
 
   for (let i = 0; i < pageCount; i++) {
     let copy = { ...columns }
-
     copy = {
-      headerName: `Data ${i+1}`,
+      headerName: `Data ${i + 1}`,
       children: [
-        ...columns.children.map(item => ({ ...item, field: item.field + i })),
+        ...columns.children.map(item => ({
+          ...item,
+          field: item.field + i,
+          comparator: () => {},
+        })),
       ],
     }
     formatArray = [...formatArray, copy]
@@ -47,7 +50,6 @@ export const formatData = (rows, rowsPerPage, pageCount) => {
 
   for (let i = 0; i < pageCount; i++) {
     let group = rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage)
-
     group = group.map(item =>
       renameProps(
         {
@@ -62,4 +64,46 @@ export const formatData = (rows, rowsPerPage, pageCount) => {
   }
 
   return unionGroupData(formatData, rowsPerPage)
+}
+
+export const dataSort = (
+  rowData,
+  column,
+  pageCount,
+  rowsPerPage,
+  setRowData,
+  cof,
+) => {
+  switch (cof) {
+    case 'desc':
+      setRowData(
+        formatData(
+          rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1)),
+          rowsPerPage,
+          pageCount,
+        ),
+      )
+      break
+    case 'asc':
+      setRowData(
+        formatData(
+          rowData.sort((a, b) => (a[column] > b[column] ? 1 : -1)),
+          rowsPerPage,
+          pageCount,
+        ),
+      )
+      break
+    default:
+      return 0
+  }
+}
+
+export const sortModelGenerator = (column, sort, pageCount) => {
+  const array = []
+
+  for (let i = 0; i < pageCount; i++) {
+    array.push({ colId: `${column}${i}`, sort })
+  }
+
+  return array
 }

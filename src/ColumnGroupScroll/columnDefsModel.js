@@ -1,3 +1,7 @@
+export const defaultColDef = {
+  filterParams: { newRowsAction: 'keep' },
+}
+
 export default {
   headerName: 'All models',
   children: [

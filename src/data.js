@@ -47,7 +47,7 @@ export default [
   {
     make: 'Porsche10',
     model: 'Boxter',
-    price: 72000,
+    price: 62000,
   },
   {
     make: 'Porsche11',
