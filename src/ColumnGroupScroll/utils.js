@@ -1,67 +1,30 @@
-const fromEntries = entries =>
-  entries.reduce((o, [key, value]) => ({ ...o, [key]: value }), {})
-
-const renameProps = (replaces, obj) =>
-  fromEntries(
-    Object.entries(obj).map(([key, value]) => [
-      replaces.hasOwnProperty(key) ? replaces[key] : key,
-      value,
-    ]),
-  )
-
-const unionGroupData = (array, step) => {
-  const array2 = []
-  for (let i = 0; i < step; i++) {
-    let x = {}
-    let y = 0
-    while (i + step * y <= array.length) {
-      x = Object.assign(x, array[i + step * y])
-      y++
-    }
-    array2.push(x)
-  }
-
-  return array2
-}
-
-export const formatColumns = (columns, pageCount) => {
-  let formatArray = []
-
-  for (let i = 0; i < pageCount; i++) {
-    let copy = { ...columns }
-    copy = {
+export const formatColumns = (columns, pageCount) =>
+  Array.from({ length: pageCount }, (_, i) =>
+    columns.map(({ ...rest }) => ({
+      ...rest,
       headerName: `Data ${i + 1}`,
       children: [
-        ...columns.children.map(item => ({
+        ...columns[0].children.map(item => ({
           ...item,
-          field: item.field + i,
-          comparator: () => {},
+          field: `${item.field}_${i}`,
         })),
       ],
-    }
-    formatArray = [...formatArray, copy]
-  }
-
-  return formatArray
-}
+    })),
+  ).flat()
 
 export const formatData = (rows, rowsPerPage, pageCount) => {
-  let formatData = []
-
-  for (let i = 0; i < pageCount; i++) {
-    let group = rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage)
-    group = group.map(item =>
+  const formatData = Array.from({ length: pageCount }, (_, i) =>
+    rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item =>
       renameProps(
         {
-          make: `make${i}`,
-          model: `model${i}`,
-          price: `price${i}`,
+          make: `make_${i}`,
+          model: `model_${i}`,
+          price: `price_${i}`,
         },
         item,
       ),
-    )
-    formatData = [...formatData, ...group]
-  }
+    ),
+  ).flat()
 
   return unionGroupData(formatData, rowsPerPage)
 }
@@ -71,8 +34,8 @@ export const dataSort = (
   column,
   pageCount,
   rowsPerPage,
-  setRowData,
   cof,
+  setRowData,
 ) => {
   switch (cof) {
     case 'desc':
@@ -102,8 +65,34 @@ export const sortModelGenerator = (column, sort, pageCount) => {
   const array = []
 
   for (let i = 0; i < pageCount; i++) {
-    array.push({ colId: `${column}${i}`, sort })
+    array.push({ colId: `${column}_${i}`, sort })
   }
 
   return array
+}
+
+const fromEntries = entries =>
+  entries.reduce((o, [key, value]) => ({ ...o, [key]: value }), {})
+
+const renameProps = (replaces, obj) =>
+  fromEntries(
+    Object.entries(obj).map(([key, value]) => [
+      replaces.hasOwnProperty(key) ? replaces[key] : key,
+      value,
+    ]),
+  )
+
+const unionGroupData = (array, step) => {
+  const array2 = []
+  for (let i = 0; i < step; i++) {
+    let x = {}
+    let y = 0
+    while (i + step * y <= array.length) {
+      x = Object.assign(x, array[i + step * y])
+      y++
+    }
+    array2.push(x)
+  }
+
+  return array2
 }

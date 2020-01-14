@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import { AgGridReact } from 'ag-grid-react'
+import { connect } from 'react-redux'
 
 import {
   dataSort,
@@ -7,70 +8,107 @@ import {
   formatData,
   sortModelGenerator,
 } from 'ColumnGroupScroll/utils'
-import columnDefsModel, {
+import {
+  columnDefsModel,
   defaultColDef,
 } from 'ColumnGroupScroll/columnDefsModel'
-
-import data from './data'
+import {
+  flagRenderer,
+  workTimeSquareRenderer,
+  workTimeCubRenderer,
+} from 'Renderers'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 
 import './app.css'
+import { selectRowData } from './redux/selector'
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      rowsPerPage: 5,
+      rowsPerPage: 23,
+      cof: true,
       pageCount: 0,
       columnDefs: [],
       rowData: [],
-      actualRowData: data,
+      actualRowData: [],
+      frameworkComponents: {
+        flagRenderer,
+        workTimeSquareRenderer,
+        workTimeCubRenderer,
+      },
     }
   }
 
   onGridReady = params => {
     this.gridApi = params.api
+    this.gridColumnAPi = params.columnApi
+    this.gridApi.setGroupHeaderHeight(0)
 
     this.preRenderFunction()
   }
 
+  setRowData = n => this.gridApi.setRowData(n)
+
+  preRenderFunction = () => {
+    const { rowsPerPage, cof } = this.state
+    const { rowData } = this.props
+    const pageCount = Math.ceil(rowData.length / rowsPerPage)
+
+    this.setState({
+      pageCount,
+      columnDefs: formatColumns(columnDefsModel(cof), pageCount, rowsPerPage),
+      actualRowData: formatData(rowData, rowsPerPage, pageCount),
+      rowData,
+    })
+  }
+
   onSortChanged = () => {
+    const { pageCount, actualRowData, rowsPerPage } = this.state
+    const { rowData } = this.props
     const sortState = this.gridApi.getSortModel()
 
-    if (sortState.length == this.state.pageCount) return 0
+    // 1. Save to Redux the sortModel
+    // 2. Grid rowData should be coming from a selector
+    // 3. If you have a reducer to save the sortModel, you can have a selector to get it
+    // 4. rowData selector should be using the sortModel selector
+
+    // 1. save sortState in this.state
+
+    if (sortState.length === pageCount) return 0
 
     if (!sortState.length) {
-      this.setRowData(this.state.rowData)
+      this.setRowData(actualRowData)
       return 0
     }
 
+    const columnToSort = sortState[0].colId.substr(
+      0,
+      sortState[0].colId.length - 2,
+    )
+    const sortType = sortState[0].sort
+
     this.gridApi.setSortModel(
-      sortModelGenerator(
-        sortState[0].colId.substr(0, sortState[0].colId.length - 1),
-        sortState[0].sort,
-        this.state.pageCount,
-      ),
+      sortModelGenerator(columnToSort, sortType, pageCount),
     )
 
     dataSort(
-      this.state.actualRowData,
-      sortState[0].colId.substr(0, sortState[0].colId.length - 1),
-      this.state.pageCount,
-      this.state.rowsPerPage,
+      rowData,
+      columnToSort,
+      pageCount,
+      rowsPerPage,
+      sortType || '',
       this.setRowData,
-      sortState[0].sort || '',
     )
   }
 
-  setStateActualRowData = actualRowData => this.setState({ actualRowData })
-
-  setRowData = n => this.gridApi.setRowData(n)
-
   onWheel = e => {
     e.preventDefault()
-    const container = document.getElementsByClassName('privet')[0]
+    const container = document.getElementsByClassName(
+      'ag-body-horizontal-scroll-viewport',
+    )[0]
     const containerScrollPosition = container.scrollLeft
 
     container.scrollTo({
@@ -80,45 +118,55 @@ class App extends Component {
     })
   }
 
-  preRenderFunction = () => {
-    const { rowsPerPage } = this.state
-    const pageCount = Math.ceil(data.length / rowsPerPage)
-    console.log(this.gridApi.getFilterModel())
-    this.setState({
-      pageCount,
-      columnDefs: formatColumns(columnDefsModel, pageCount, rowsPerPage),
-      rowData: formatData(this.state.actualRowData, rowsPerPage, pageCount),
-    })
+  onClick = () => {
+    this.setState({ cof: !this.state.cof }, () =>
+      this.setState({
+        columnDefs: formatColumns(
+          columnDefsModel(this.state.cof),
+          this.state.pageCount,
+          this.state.rowsPerPage,
+        ),
+        actualRowData: formatData(
+          this.props.rowData,
+          this.state.rowsPerPage,
+          this.state.pageCount,
+        ),
+      }),
+    )
   }
 
   render() {
-    const { columnDefs, rowData } = this.state
+    const { columnDefs, actualRowData, frameworkComponents } = this.state
 
     return (
-      <div className="privet">
+      <div onWheel={this.onWheel} style={{ overflow: 'hidden' }}>
+        <button onClick={this.onClick}>Switch cof value</button>
         <div
           className="ag-theme-balham"
           style={{
-            height: '300px',
-            width: `${this.state.pageCount * 600}px`,
+            height: `700px`,
+            width: `100vw`,
           }}
-          onWheel={this.onWheel}
         >
           <AgGridReact
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
-            rowData={rowData}
+            rowData={actualRowData}
             onSortChanged={this.onSortChanged}
             onGridReady={this.onGridReady}
-            suppressHorizontalScroll
+            onBodyScroll={this.onBodyScroll}
+            frameworkComponents={frameworkComponents}
           />
         </div>
       </div>
     )
   }
 }
+const mapStateToProps = state => ({
+  rowData: selectRowData(state),
+})
 
-export default App
+export default connect(mapStateToProps)(App)
 
 //
 // onFilterChanged = () => {
