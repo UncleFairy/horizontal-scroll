@@ -39,22 +39,10 @@ export const dataSort = (
 ) => {
   switch (cof) {
     case 'desc':
-      setRowData(
-        formatData(
-          rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1)),
-          rowsPerPage,
-          pageCount,
-        ),
-      )
+      setRowData(rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1)))
       break
     case 'asc':
-      setRowData(
-        formatData(
-          rowData.sort((a, b) => (a[column] > b[column] ? 1 : -1)),
-          rowsPerPage,
-          pageCount,
-        ),
-      )
+      setRowData(rowData.sort((a, b) => (a[column] > b[column] ? 1 : -1)))
       break
     default:
       return 0

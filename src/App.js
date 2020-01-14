@@ -22,17 +22,17 @@ import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 
 import './app.css'
-import { selectRowData } from './redux/selector'
+
+import { changeCof, changeSortModel } from './redux/actions'
+import { selectRowData, selectCof } from './redux/selector'
 
 class App extends Component {
   constructor(props) {
     super(props)
     this.state = {
       rowsPerPage: 23,
-      cof: true,
       pageCount: 0,
       columnDefs: [],
-      rowData: [],
       actualRowData: [],
       frameworkComponents: {
         flagRenderer,
@@ -42,45 +42,48 @@ class App extends Component {
     }
   }
 
+  componentWillReceiveProps({ cof }) {
+    if (cof !== this.props.cof) {
+      this.setState({ columnDefs: columnDefsModel(cof) })
+    }
+  }
+
+  setStateActualRowData = rowData =>
+    this.setState({
+      actualRowData: rowData,
+    })
+
   onGridReady = params => {
     this.gridApi = params.api
-    this.gridColumnAPi = params.columnApi
     this.gridApi.setGroupHeaderHeight(0)
 
     this.preRenderFunction()
   }
 
-  setRowData = n => this.gridApi.setRowData(n)
-
   preRenderFunction = () => {
-    const { rowsPerPage, cof } = this.state
-    const { rowData } = this.props
+    const { rowsPerPage } = this.state
+    const { rowData, cof } = this.props
+
     const pageCount = Math.ceil(rowData.length / rowsPerPage)
 
     this.setState({
       pageCount,
-      columnDefs: formatColumns(columnDefsModel(cof), pageCount, rowsPerPage),
-      actualRowData: formatData(rowData, rowsPerPage, pageCount),
-      rowData,
+      columnDefs: columnDefsModel(cof),
+      actualRowData: [...rowData],
     })
   }
 
   onSortChanged = () => {
     const { pageCount, actualRowData, rowsPerPage } = this.state
-    const { rowData } = this.props
+    const { rowData, changeSortModel } = this.props
     const sortState = this.gridApi.getSortModel()
 
-    // 1. Save to Redux the sortModel
-    // 2. Grid rowData should be coming from a selector
-    // 3. If you have a reducer to save the sortModel, you can have a selector to get it
-    // 4. rowData selector should be using the sortModel selector
-
-    // 1. save sortState in this.state
+    changeSortModel(sortState)
 
     if (sortState.length === pageCount) return 0
 
     if (!sortState.length) {
-      this.setRowData(actualRowData)
+      this.setStateActualRowData(rowData)
       return 0
     }
 
@@ -95,12 +98,12 @@ class App extends Component {
     )
 
     dataSort(
-      rowData,
+      actualRowData,
       columnToSort,
       pageCount,
       rowsPerPage,
       sortType || '',
-      this.setRowData,
+      this.setStateActualRowData,
     )
   }
 
@@ -119,28 +122,34 @@ class App extends Component {
   }
 
   onClick = () => {
-    this.setState({ cof: !this.state.cof }, () =>
-      this.setState({
-        columnDefs: formatColumns(
-          columnDefsModel(this.state.cof),
-          this.state.pageCount,
-          this.state.rowsPerPage,
-        ),
-        actualRowData: formatData(
-          this.props.rowData,
-          this.state.rowsPerPage,
-          this.state.pageCount,
-        ),
-      }),
-    )
+    const { cof } = this.state
+    const { changeCof } = this.props
+
+    this.setState({ cof: !cof })
+    changeCof(!cof)
   }
 
   render() {
-    const { columnDefs, actualRowData, frameworkComponents } = this.state
+    const {
+      columnDefs,
+      actualRowData,
+      pageCount,
+      rowsPerPage,
+      frameworkComponents,
+    } = this.state
+
+    const formatColumnDefs = formatColumns(columnDefs, pageCount, rowsPerPage)
+    const formatActualRowData = formatData(
+      actualRowData,
+      rowsPerPage,
+      pageCount,
+    )
 
     return (
       <div onWheel={this.onWheel} style={{ overflow: 'hidden' }}>
-        <button onClick={this.onClick}>Switch cof value</button>
+        <button type="button" onClick={this.onClick}>
+          Switch cof value
+        </button>
         <div
           className="ag-theme-balham"
           style={{
@@ -149,9 +158,9 @@ class App extends Component {
           }}
         >
           <AgGridReact
-            columnDefs={columnDefs}
+            columnDefs={formatColumnDefs}
+            rowData={formatActualRowData}
             defaultColDef={defaultColDef}
-            rowData={actualRowData}
             onSortChanged={this.onSortChanged}
             onGridReady={this.onGridReady}
             onBodyScroll={this.onBodyScroll}
@@ -164,9 +173,22 @@ class App extends Component {
 }
 const mapStateToProps = state => ({
   rowData: selectRowData(state),
+  cof: selectCof(state),
 })
 
-export default connect(mapStateToProps)(App)
+const mapDispatchToProps = {
+  changeCof,
+  changeSortModel,
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App)
+
+// 1. Save to Redux the sortModel
+// 2. Grid rowData should be coming from a selector
+// 3. If you have a reducer to save the sortModel, you can have a selector to get it
+// 4. rowData selector should be using the sortModel selector
+
+// 1. save sortState in this.state
 
 //
 // onFilterChanged = () => {
