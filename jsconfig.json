@@ -4,7 +4,8 @@
     "paths": {
       "ConveyorScroll": ["src/ConveyorScroll/*"],
       "InputScroll": ["src/InputScroll/*"],
-      "Renderers": ["src/Renderers"]
+      "Renderers": ["src/Renderers"],
+      "Filters": ["src/Filters"]
     }
   }
 }

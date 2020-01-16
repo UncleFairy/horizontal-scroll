@@ -29,34 +29,63 @@ export const formatData = (rows, rowsPerPage, pageCount) => {
   return unionGroupData(formatData, rowsPerPage)
 }
 
-export const dataSort = (
-  rowData,
-  column,
-  pageCount,
-  rowsPerPage,
-  cof,
-  setRowData,
-) => {
+export const dataSort = (rowData, column, cof) => {
   switch (cof) {
     case 'desc':
-      setRowData(rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1)))
-      break
+      return rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1))
     case 'asc':
-      setRowData(rowData.sort((a, b) => (a[column] > b[column] ? 1 : -1)))
-      break
+      return rowData.sort((a, b) => (a[column] > b[column] ? 1 : -1))
     default:
       return 0
   }
 }
 
-export const sortModelGenerator = (column, sort, pageCount) => {
+export const sortModelGenerator = ({ columnToSort, sort }, pageCount) => {
   const array = []
 
   for (let i = 0; i < pageCount; i++) {
-    array.push({ colId: `${column}_${i}`, sort })
+    array.push({ colId: `${columnToSort}_${i}`, sort })
   }
 
   return array
+}
+
+export const filterModelGenerator = (filterModel, pageCount) => {
+  let filterState = {}
+
+  filterModel.forEach(filter => {
+    for (let i = 0; i < pageCount; i++) {
+      filterState = {
+        ...filterState,
+        [`${filter.columnToFilter}_${i}`]: { ...filter },
+      }
+    }
+  })
+
+  return filterState
+}
+
+export const formatSortModel = sortState => {
+  const columnToSort = sortState[0].colId.substr(
+    0,
+    sortState[0].colId.length - 2,
+  )
+  const { sort } = sortState[0]
+
+  return { columnToSort, sort }
+}
+
+export const formatFilterModel = filterState => {
+  const filterModel = []
+  // @TODO filter one column function
+  for (let i in filterState) {
+    filterModel.push({
+      ...filterState[i],
+      columnToFilter: i.substr(0, i.length - 2),
+    })
+  }
+
+  return filterModel
 }
 
 const fromEntries = entries =>

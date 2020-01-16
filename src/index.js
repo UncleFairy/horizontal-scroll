@@ -5,7 +5,7 @@ import { Provider } from 'react-redux'
 
 import { reducer } from './redux/reducer'
 import { addRowData } from './redux/actions'
-import data from './data'
+import { dataCreator } from './data'
 import App from './App'
 
 const store = createStore(
@@ -13,7 +13,7 @@ const store = createStore(
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__(),
 )
 
-store.dispatch(addRowData(data))
+store.dispatch(addRowData(dataCreator(25000)))
 
 ReactDOM.render(
   <Provider store={store}>

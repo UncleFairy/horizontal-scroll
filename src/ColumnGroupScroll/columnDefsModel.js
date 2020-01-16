@@ -12,6 +12,7 @@ export const columnDefsModel = cof => [
         headerName: 'Make',
         field: 'make',
         sortable: true,
+        //filter: 'containFilter',
         filter: true,
       },
       {

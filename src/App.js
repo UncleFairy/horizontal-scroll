@@ -3,10 +3,12 @@ import { AgGridReact } from 'ag-grid-react'
 import { connect } from 'react-redux'
 
 import {
-  dataSort,
   formatColumns,
   formatData,
+  formatSortModel,
+  formatFilterModel,
   sortModelGenerator,
+  filterModelGenerator,
 } from 'ColumnGroupScroll/utils'
 import {
   columnDefsModel,
@@ -18,13 +20,16 @@ import {
   workTimeCubRenderer,
 } from 'Renderers'
 
+import containFilter from 'Filters/containFilter'
+
 import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 
 import './app.css'
 
-import { changeCof, changeSortModel } from './redux/actions'
-import { selectRowData, selectCof } from './redux/selector'
+import { changeCof, changeSortModel, changeFilterModel } from './redux/actions'
+import { selectCof, dataSelector } from './redux/selector'
+import { EMPTY_SORT_MODEL, EMPTY_FILTER_MODEL } from './constants'
 
 class App extends Component {
   constructor(props) {
@@ -32,26 +37,25 @@ class App extends Component {
     this.state = {
       rowsPerPage: 23,
       pageCount: 0,
-      columnDefs: [],
-      actualRowData: [],
       frameworkComponents: {
         flagRenderer,
         workTimeSquareRenderer,
         workTimeCubRenderer,
+        containFilter,
       },
     }
   }
 
-  componentWillReceiveProps({ cof }) {
-    if (cof !== this.props.cof) {
-      this.setState({ columnDefs: columnDefsModel(cof) })
-    }
-  }
-
-  setStateActualRowData = rowData =>
-    this.setState({
-      actualRowData: rowData,
-    })
+  // componentWillReceiveProps(nextProps) {
+  //   if (nextProps.rowData !== this.props.rowData) {
+  //     console.log({
+  //       pageCount: Math.ceil(nextProps.rowData.length / this.state.rowsPerPage),
+  //     })
+  //     this.setState({
+  //       pageCount: Math.ceil(nextProps.rowData.length / this.state.rowsPerPage),
+  //     })
+  //   }
+  // }
 
   onGridReady = params => {
     this.gridApi = params.api
@@ -62,49 +66,50 @@ class App extends Component {
 
   preRenderFunction = () => {
     const { rowsPerPage } = this.state
-    const { rowData, cof } = this.props
+    const { rowData } = this.props
 
     const pageCount = Math.ceil(rowData.length / rowsPerPage)
 
     this.setState({
       pageCount,
-      columnDefs: columnDefsModel(cof),
-      actualRowData: [...rowData],
     })
   }
 
-  onSortChanged = () => {
-    const { pageCount, actualRowData, rowsPerPage } = this.state
-    const { rowData, changeSortModel } = this.props
-    const sortState = this.gridApi.getSortModel()
+  onSortChanged = ({ api }) => {
+    const { pageCount } = this.state
+    const { changeSortModel } = this.props
+    const sortState = api.getSortModel()
 
-    changeSortModel(sortState)
-
-    if (sortState.length === pageCount) return 0
+    if (sortState.length === pageCount) return
 
     if (!sortState.length) {
-      this.setStateActualRowData(rowData)
+      changeSortModel(EMPTY_SORT_MODEL)
       return 0
     }
 
-    const columnToSort = sortState[0].colId.substr(
-      0,
-      sortState[0].colId.length - 2,
-    )
-    const sortType = sortState[0].sort
+    const sortModel = formatSortModel(sortState)
+    changeSortModel(sortModel)
 
-    this.gridApi.setSortModel(
-      sortModelGenerator(columnToSort, sortType, pageCount),
-    )
+    api.setSortModel(sortModelGenerator(sortModel, pageCount))
+  }
 
-    dataSort(
-      actualRowData,
-      columnToSort,
-      pageCount,
-      rowsPerPage,
-      sortType || '',
-      this.setStateActualRowData,
-    )
+  onFilterChanged = ({ api }) => {
+    const { pageCount } = this.state
+    const { changeFilterModel } = this.props
+
+    const filterState = api.getFilterModel()
+    const filterModel = formatFilterModel(filterState)
+
+    if (!filterModel.length) {
+      changeFilterModel(EMPTY_FILTER_MODEL)
+      return
+    }
+
+    if (filterModel.length % pageCount === 0) return
+
+    changeFilterModel(filterModel)
+
+    // api.setFilterModel(filterModelGenerator(filterModel, pageCount))
   }
 
   onWheel = e => {
@@ -116,38 +121,30 @@ class App extends Component {
 
     container.scrollTo({
       top: 0,
-      left: containerScrollPosition + e.deltaY,
+      left: containerScrollPosition + e.deltaY * 0.35,
       behaviour: 'smooth',
     })
   }
 
-  onClick = () => {
-    const { cof } = this.state
-    const { changeCof } = this.props
-
-    this.setState({ cof: !cof })
-    changeCof(!cof)
-  }
-
   render() {
-    const {
-      columnDefs,
-      actualRowData,
-      pageCount,
-      rowsPerPage,
-      frameworkComponents,
-    } = this.state
+    const { pageCount, rowsPerPage, frameworkComponents } = this.state
+    const { rowData } = this.props
 
-    const formatColumnDefs = formatColumns(columnDefs, pageCount, rowsPerPage)
-    const formatActualRowData = formatData(
-      actualRowData,
-      rowsPerPage,
+    const formatColumnDefs = formatColumns(
+      columnDefsModel(true),
       pageCount,
+      rowsPerPage,
     )
+
+    const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
     return (
       <div onWheel={this.onWheel} style={{ overflow: 'hidden' }}>
-        <button type="button" onClick={this.onClick}>
+        <button
+          type="button"
+          onClick={this.onClick}
+          styles={{ display: 'none' }}
+        >
           Switch cof value
         </button>
         <div
@@ -159,9 +156,10 @@ class App extends Component {
         >
           <AgGridReact
             columnDefs={formatColumnDefs}
-            rowData={formatActualRowData}
+            rowData={formatRowData}
             defaultColDef={defaultColDef}
             onSortChanged={this.onSortChanged}
+            onFilterChanged={this.onFilterChanged}
             onGridReady={this.onGridReady}
             onBodyScroll={this.onBodyScroll}
             frameworkComponents={frameworkComponents}
@@ -172,13 +170,14 @@ class App extends Component {
   }
 }
 const mapStateToProps = state => ({
-  rowData: selectRowData(state),
+  rowData: dataSelector(state),
   cof: selectCof(state),
 })
 
 const mapDispatchToProps = {
   changeCof,
   changeSortModel,
+  changeFilterModel,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)
@@ -189,51 +188,3 @@ export default connect(mapStateToProps, mapDispatchToProps)(App)
 // 4. rowData selector should be using the sortModel selector
 
 // 1. save sortState in this.state
-
-//
-// onFilterChanged = () => {
-//   const model = this.gridApi.getFilterModel()
-//
-//   if (_.isEmpty(model)) {
-//     this.setStateActualRowData(data)
-//     return
-//   }
-//
-//   for (const i in model)
-//     this.setState({
-//       filterModel: {
-//         ...this.state.filterModel,
-//         [i.substr(0, i.length - 1)]: {
-//           filter: model[i].filter,
-//           filterType: model[i].filterType,
-//         },
-//       },
-//     })
-//
-//   const filteredData = this.state.actualRowData.filter(item => {
-//     for (let i in this.state.filterModel) {
-//       switch (this.state.filterModel[i].filterType) {
-//         case 'text':
-//           if (item[i].includes(this.state.filterModel[i].filter)) return true
-//           break
-//         case 'number':
-//           if (item[i] > this.state.filterModel[i].filter) return true
-//           break
-//         case 'date:':
-//           if (item[i] > this.state.filterModel[i].filter) return true
-//           break
-//         default:
-//           return false
-//       }
-//     }
-//   })
-//
-//   this.setStateActualRowData(filteredData)
-//
-//   this.setRowData(
-//       formatData(filteredData, this.state.rowsPerPage, this.state.pageCount),
-//   )
-// }
-
-//State
-//filterModel: { make: '', model: '', price: '' },

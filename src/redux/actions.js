@@ -18,3 +18,10 @@ export const changeSortModel = sortModel => ({
     sortModel,
   },
 })
+
+export const changeFilterModel = filterModel => ({
+  type: 'CHANGE_FILTER_MODEL',
+  payload: {
+    filterModel,
+  },
+})
