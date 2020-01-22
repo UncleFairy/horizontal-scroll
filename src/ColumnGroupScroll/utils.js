@@ -1,32 +1,26 @@
 export const formatColumns = (columns, pageCount) =>
-  Array.from({ length: pageCount }, (_, i) =>
-    columns.map(({ ...rest }) => ({
-      ...rest,
-      headerName: `Data ${i + 1}`,
-      children: [
-        ...columns[0].children.map(item => ({
-          ...item,
-          field: `${item.field}_${i}`,
-        })),
-      ],
+  Array.from({ length: pageCount }, (_, i) => ({
+    headerName: `Group ${i + 1}`,
+    children: columns.map(item => ({
+      ...item,
+      colId: `${item.field}_${i}`,
+      field: `${item.field}_${i}`,
     })),
-  ).flat()
+  }))
 
 export const formatData = (rows, rowsPerPage, pageCount) => {
-  const formatData = Array.from({ length: pageCount }, (_, i) =>
-    rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item =>
-      renameProps(
-        {
-          make: `make_${i}`,
-          model: `model_${i}`,
-          price: `price_${i}`,
-        },
-        item,
-      ),
-    ),
+  const formatRowData = Array.from({ length: pageCount }, (_, i) =>
+    rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item => {
+      const itemKeys = Object.keys(item)
+      const formatItemKeys = Object.assign(
+        ...itemKeys.map(field => ({ [field]: `${field}_${i}` })),
+      )
+
+      return renameProps(formatItemKeys, item)
+    }),
   ).flat()
 
-  return unionGroupData(formatData, rowsPerPage)
+  return unionGroupData(formatRowData, rowsPerPage)
 }
 
 export const dataSort = (rowData, column, cof) => {
@@ -99,17 +93,19 @@ const renameProps = (replaces, obj) =>
     ]),
   )
 
-const unionGroupData = (array, step) => {
-  const array2 = []
+const unionGroupData = (formatRowData, step) => {
+  let groupFormatRowData = []
+
   for (let i = 0; i < step; i++) {
-    let x = {}
-    let y = 0
-    while (i + step * y <= array.length) {
-      x = Object.assign(x, array[i + step * y])
-      y++
+    let group = {}
+    let rowChooserCounter = 0
+
+    while (i + step * rowChooserCounter <= formatRowData.length) {
+      group = Object.assign(group, formatRowData[i + step * rowChooserCounter])
+      rowChooserCounter += 1
     }
-    array2.push(x)
+    groupFormatRowData = [...groupFormatRowData, group]
   }
 
-  return array2
+  return groupFormatRowData
 }

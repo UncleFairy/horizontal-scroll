@@ -28,7 +28,7 @@ import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 import './app.css'
 
 import { changeCof, changeSortModel, changeFilterModel } from './redux/actions'
-import { selectCof, dataSelector } from './redux/selector'
+import { dataSelector } from './redux/selector'
 import { EMPTY_SORT_MODEL, EMPTY_FILTER_MODEL } from './constants'
 
 class App extends Component {
@@ -46,20 +46,18 @@ class App extends Component {
     }
   }
 
-  // componentWillReceiveProps(nextProps) {
-  //   if (nextProps.rowData !== this.props.rowData) {
-  //     console.log({
-  //       pageCount: Math.ceil(nextProps.rowData.length / this.state.rowsPerPage),
-  //     })
-  //     this.setState({
-  //       pageCount: Math.ceil(nextProps.rowData.length / this.state.rowsPerPage),
-  //     })
+  // static getDerivedStateFromProps(newProps, prevState) {
+  //   if (newProps.rowData.length !== prevState.props.rowData.length) {
+  //     return {
+  //       pageCount: Math.ceil(newProps.rowData.length / prevState.rowsPerPage),
+  //     }
   //   }
+  //
+  //   return null
   // }
 
-  onGridReady = params => {
-    this.gridApi = params.api
-    this.gridApi.setGroupHeaderHeight(0)
+  onGridReady = ({ api }) => {
+    api.setGroupHeaderHeight(0)
 
     this.preRenderFunction()
   }
@@ -130,23 +128,11 @@ class App extends Component {
     const { pageCount, rowsPerPage, frameworkComponents } = this.state
     const { rowData } = this.props
 
-    const formatColumnDefs = formatColumns(
-      columnDefsModel(true),
-      pageCount,
-      rowsPerPage,
-    )
-
+    const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
     const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
     return (
       <div onWheel={this.onWheel} style={{ overflow: 'hidden' }}>
-        <button
-          type="button"
-          onClick={this.onClick}
-          styles={{ display: 'none' }}
-        >
-          Switch cof value
-        </button>
         <div
           className="ag-theme-balham"
           style={{
@@ -162,6 +148,7 @@ class App extends Component {
             onFilterChanged={this.onFilterChanged}
             onGridReady={this.onGridReady}
             onBodyScroll={this.onBodyScroll}
+            onRowDataChanged={() => {}}
             frameworkComponents={frameworkComponents}
           />
         </div>
@@ -171,7 +158,6 @@ class App extends Component {
 }
 const mapStateToProps = state => ({
   rowData: dataSelector(state),
-  cof: selectCof(state),
 })
 
 const mapDispatchToProps = {

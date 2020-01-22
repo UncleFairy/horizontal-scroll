@@ -49,17 +49,7 @@ export default class CubeRenderer extends Component {
           />
         )
       default:
-        return (
-          <ReactCountryFlag
-            countryCode="MD"
-            svg
-            style={{
-              width: '2em',
-              height: '2em',
-            }}
-            title="MD"
-          />
-        )
+        return ''
     }
   }
 

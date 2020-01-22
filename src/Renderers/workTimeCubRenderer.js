@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import _ from 'lodash'
 
 export default class CubRenderer extends Component {
   constructor(props) {
@@ -10,6 +11,7 @@ export default class CubRenderer extends Component {
   }
 
   valueSquared() {
+    if (isNaN(this.props.value)) return ''
     return (((((this.props.value / 3) * 4) / 2) * 3) / 4) * 7
   }
 
