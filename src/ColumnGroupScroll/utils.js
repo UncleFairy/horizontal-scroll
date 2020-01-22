@@ -1,5 +1,11 @@
-export const formatColumns = (columns, pageCount) =>
-  Array.from({ length: pageCount }, (_, i) => ({
+import _ from 'lodash'
+
+import { EMPTY_ARRAY, EMPTY_FILTER_MODEL, EMPTY_SORT_MODEL } from '../constants'
+
+export const formatColumns = (columns, pageCount) => {
+  if (_.isEmpty(columns)) return EMPTY_ARRAY
+
+  return Array.from({ length: pageCount }, (_, i) => ({
     headerName: `Group ${i + 1}`,
     children: columns.map(item => ({
       ...item,
@@ -7,10 +13,13 @@ export const formatColumns = (columns, pageCount) =>
       field: `${item.field}_${i}`,
     })),
   }))
+}
 
-export const formatData = (rows, rowsPerPage, pageCount) => {
+export const formatData = (rowData, rowsPerPage, pageCount) => {
+  if (_.isEmpty(rowData)) return EMPTY_ARRAY
+
   const formatRowData = Array.from({ length: pageCount }, (_, i) =>
-    rows.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item => {
+    rowData.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item => {
       const itemKeys = Object.keys(item)
       const formatItemKeys = Object.assign(
         ...itemKeys.map(field => ({ [field]: `${field}_${i}` })),
@@ -24,6 +33,8 @@ export const formatData = (rows, rowsPerPage, pageCount) => {
 }
 
 export const dataSort = (rowData, column, cof) => {
+  if (_.isEmpty(rowData)) return EMPTY_ARRAY
+
   switch (cof) {
     case 'desc':
       return rowData.sort((a, b) => (a[column] > b[column] ? -1 : 1))
@@ -35,16 +46,20 @@ export const dataSort = (rowData, column, cof) => {
 }
 
 export const sortModelGenerator = ({ columnToSort, sort }, pageCount) => {
-  const array = []
+  if (_.isEmpty({ columnToSort, sort })) return EMPTY_SORT_MODEL
+
+  let sortModel = []
 
   for (let i = 0; i < pageCount; i++) {
-    array.push({ colId: `${columnToSort}_${i}`, sort })
+    sortModel = [...sortModel, { colId: `${columnToSort}_${i}`, sort }]
   }
 
-  return array
+  return sortModel
 }
 
 export const filterModelGenerator = (filterModel, pageCount) => {
+  if (_.isEmpty(filterModel)) return EMPTY_FILTER_MODEL
+
   let filterState = {}
 
   filterModel.forEach(filter => {
@@ -60,16 +75,17 @@ export const filterModelGenerator = (filterModel, pageCount) => {
 }
 
 export const formatSortModel = sortState => {
-  const columnToSort = sortState[0].colId.substr(
-    0,
-    sortState[0].colId.length - 2,
-  )
-  const { sort } = sortState[0]
+  if (_.isEmpty(sortState)) return EMPTY_SORT_MODEL
+
+  const columnToSort = sortState.colId.split('_')[0]
+  const { sort } = sortState
 
   return { columnToSort, sort }
 }
 
 export const formatFilterModel = filterState => {
+  if (_.isEmpty(filterState)) return EMPTY_FILTER_MODEL
+
   const filterModel = []
   // @TODO filter one column function
   for (let i in filterState) {
@@ -94,6 +110,8 @@ const renameProps = (replaces, obj) =>
   )
 
 const unionGroupData = (formatRowData, step) => {
+  if (_.isEmpty(formatRowData)) return EMPTY_ARRAY
+
   let groupFormatRowData = []
 
   for (let i = 0; i < step; i++) {
@@ -104,6 +122,7 @@ const unionGroupData = (formatRowData, step) => {
       group = Object.assign(group, formatRowData[i + step * rowChooserCounter])
       rowChooserCounter += 1
     }
+
     groupFormatRowData = [...groupFormatRowData, group]
   }
 

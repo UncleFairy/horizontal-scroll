@@ -27,15 +27,24 @@ import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 
 import './app.css'
 
-import { changeCof, changeSortModel, changeFilterModel } from './redux/actions'
-import { dataSelector } from './redux/selector'
-import { EMPTY_SORT_MODEL, EMPTY_FILTER_MODEL } from './constants'
+import {
+  changeCof,
+  changeSortModel,
+  changeFilterModel,
+  changeGridHeight,
+} from './redux/actions'
+import {
+  dataSelector,
+  rowsPerPageSelector,
+  selectGridHeight,
+} from './redux/selector'
+import { EMPTY_SORT_MODEL, EMPTY_FILTER_MODEL, ONE_PAGE } from './constants'
 
 class App extends Component {
   constructor(props) {
     super(props)
+    this.gridRef = React.createRef()
     this.state = {
-      rowsPerPage: 23,
       pageCount: 0,
       frameworkComponents: {
         flagRenderer,
@@ -63,14 +72,16 @@ class App extends Component {
   }
 
   preRenderFunction = () => {
-    const { rowsPerPage } = this.state
-    const { rowData } = this.props
+    const { rowData, rowsPerPage } = this.props
 
-    const pageCount = Math.ceil(rowData.length / rowsPerPage)
-
-    this.setState({
-      pageCount,
-    })
+    if (rowData.length <= rowsPerPage)
+      this.setState({
+        pageCount: ONE_PAGE,
+      })
+    else
+      this.setState({
+        pageCount: Math.ceil(rowData.length / rowsPerPage),
+      })
   }
 
   onSortChanged = ({ api }) => {
@@ -78,14 +89,14 @@ class App extends Component {
     const { changeSortModel } = this.props
     const sortState = api.getSortModel()
 
-    if (sortState.length === pageCount) return
+    if (sortState.length === pageCount && pageCount !== ONE_PAGE) return
 
     if (!sortState.length) {
       changeSortModel(EMPTY_SORT_MODEL)
       return 0
     }
 
-    const sortModel = formatSortModel(sortState)
+    const sortModel = formatSortModel(sortState[0])
     changeSortModel(sortModel)
 
     api.setSortModel(sortModelGenerator(sortModel, pageCount))
@@ -124,19 +135,29 @@ class App extends Component {
     })
   }
 
+  onGridSizeChanged = () => {
+    const { changeGridHeight } = this.props
+
+    changeGridHeight(this.gridRef.current.clientHeight)
+  }
+
   render() {
-    const { pageCount, rowsPerPage, frameworkComponents } = this.state
-    const { rowData } = this.props
+    const { pageCount, frameworkComponents } = this.state
+    const { rowData, rowsPerPage, gridHeight } = this.props
 
     const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
     const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
     return (
-      <div onWheel={this.onWheel} style={{ overflow: 'hidden' }}>
+      <div
+        onWheel={this.onWheel}
+        style={{ overflow: 'hidden' }}
+        ref={this.gridRef}
+      >
         <div
           className="ag-theme-balham"
           style={{
-            height: `700px`,
+            height: `${gridHeight}px`,
             width: `100vw`,
           }}
         >
@@ -147,8 +168,8 @@ class App extends Component {
             onSortChanged={this.onSortChanged}
             onFilterChanged={this.onFilterChanged}
             onGridReady={this.onGridReady}
-            onBodyScroll={this.onBodyScroll}
-            onRowDataChanged={() => {}}
+            onGridSizeChanged={this.onGridSizeChanged}
+            domLayout="autoHeight"
             frameworkComponents={frameworkComponents}
           />
         </div>
@@ -158,12 +179,15 @@ class App extends Component {
 }
 const mapStateToProps = state => ({
   rowData: dataSelector(state),
+  rowsPerPage: rowsPerPageSelector(state),
+  gridHeight: selectGridHeight(state),
 })
 
 const mapDispatchToProps = {
   changeCof,
   changeSortModel,
   changeFilterModel,
+  changeGridHeight,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)

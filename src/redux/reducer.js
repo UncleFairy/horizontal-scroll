@@ -10,6 +10,10 @@ export const reducer = (state = {}, action) => {
       return Object.assign({}, state, {
         filterModel: action.payload.filterModel,
       })
+    case 'CHANGE_GRID_HEIGHT':
+      return Object.assign({}, state, {
+        gridHeight: action.payload.gridHeight,
+      })
     default:
       return state
   }

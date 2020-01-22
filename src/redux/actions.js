@@ -25,3 +25,11 @@ export const changeFilterModel = filterModel => ({
     filterModel,
   },
 })
+
+export const changeGridHeight = gridHeight => ({
+  type: 'CHANGE_GRID_HEIGHT',
+  payload: {
+    gridHeight,
+  },
+})
+

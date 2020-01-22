@@ -5,11 +5,11 @@ import { dataSort } from 'ColumnGroupScroll/utils'
 
 export const selectRowData = ({ rowData }) => rowData
 
-export const selectCof = ({ cof }) => cof
-
 export const selectSortModel = ({ sortModel }) => sortModel
 
 export const selectFilterModel = ({ filterModel }) => filterModel
+
+export const selectGridHeight = ({ gridHeight }) => gridHeight
 
 export const dataSelector = createSelector(
   selectSortModel,
@@ -32,5 +32,14 @@ export const dataSelector = createSelector(
     }
 
     return data
+  },
+)
+
+export const rowsPerPageSelector = createSelector(
+  selectGridHeight,
+  dataSelector,
+  (height, rowData) => {
+    if (Math.floor((height - 100) / 28) > rowData.length) return rowData.length
+    return Math.floor((height - 100) / 28)
   },
 )
