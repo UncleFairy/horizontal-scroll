@@ -91,7 +91,7 @@ export const formatFilterModel = filterState => {
   for (let i in filterState) {
     filterModel.push({
       ...filterState[i],
-      columnToFilter: i.substr(0, i.length - 2),
+      columnToFilter: i.split('_')[0],
     })
   }
 

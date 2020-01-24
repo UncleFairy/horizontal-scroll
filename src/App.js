@@ -1,6 +1,8 @@
-import React, { Component } from 'react'
+import React, { useRef } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 import { connect } from 'react-redux'
+import _ from 'lodash'
+import { arrayOf, func, number, shape } from 'prop-types'
 
 import {
   formatColumns,
@@ -19,7 +21,6 @@ import {
   workTimeSquareRenderer,
   workTimeCubRenderer,
 } from 'Renderers'
-
 import containFilter from 'Filters/containFilter'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
@@ -35,65 +36,50 @@ import {
 } from './redux/actions'
 import {
   dataSelector,
+  pageCountSelector,
   rowsPerPageSelector,
+  selectFilterModel,
   selectGridHeight,
+  selectRowDataLength,
 } from './redux/selector'
-import { EMPTY_SORT_MODEL, EMPTY_FILTER_MODEL, ONE_PAGE } from './constants'
+import {
+  EMPTY_SORT_MODEL,
+  EMPTY_FILTER_MODEL,
+  ONE_PAGE,
+  ZERO_HEIGHT,
+} from './constants'
 
-class App extends Component {
-  constructor(props) {
-    super(props)
-    this.gridRef = React.createRef()
-    this.state = {
-      pageCount: 0,
-      frameworkComponents: {
-        flagRenderer,
-        workTimeSquareRenderer,
-        workTimeCubRenderer,
-        containFilter,
-      },
-    }
+const App = ({
+  rowData,
+  gridHeight,
+  pageCount,
+  rowsPerPage,
+  changeSortModel,
+  changeFilterModel,
+  changeGridHeight,
+  allRowDataLength,
+}) => {
+  const gridRef = useRef(null)
+
+  const frameworkComponents = {
+    flagRenderer,
+    workTimeSquareRenderer,
+    workTimeCubRenderer,
+    containFilter,
   }
+  const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
+  const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
-  // static getDerivedStateFromProps(newProps, prevState) {
-  //   if (newProps.rowData.length !== prevState.props.rowData.length) {
-  //     return {
-  //       pageCount: Math.ceil(newProps.rowData.length / prevState.rowsPerPage),
-  //     }
-  //   }
-  //
-  //   return null
-  // }
+  const onGridReady = ({ api }) => api.setGroupHeaderHeight(ZERO_HEIGHT)
 
-  onGridReady = ({ api }) => {
-    api.setGroupHeaderHeight(0)
-
-    this.preRenderFunction()
-  }
-
-  preRenderFunction = () => {
-    const { rowData, rowsPerPage } = this.props
-
-    if (rowData.length <= rowsPerPage)
-      this.setState({
-        pageCount: ONE_PAGE,
-      })
-    else
-      this.setState({
-        pageCount: Math.ceil(rowData.length / rowsPerPage),
-      })
-  }
-
-  onSortChanged = ({ api }) => {
-    const { pageCount } = this.state
-    const { changeSortModel } = this.props
+  const onSortChanged = ({ api }) => {
     const sortState = api.getSortModel()
 
     if (sortState.length === pageCount && pageCount !== ONE_PAGE) return
 
     if (!sortState.length) {
       changeSortModel(EMPTY_SORT_MODEL)
-      return 0
+      return
     }
 
     const sortModel = formatSortModel(sortState[0])
@@ -102,12 +88,11 @@ class App extends Component {
     api.setSortModel(sortModelGenerator(sortModel, pageCount))
   }
 
-  onFilterChanged = ({ api }) => {
-    const { pageCount } = this.state
-    const { changeFilterModel } = this.props
-
+  const onFilterChanged = ({ api }) => {
     const filterState = api.getFilterModel()
     const filterModel = formatFilterModel(filterState)
+
+    // if (_.isEmpty(filterModel) && rowData.length !== allRowDataLength) return
 
     if (!filterModel.length) {
       changeFilterModel(EMPTY_FILTER_MODEL)
@@ -117,11 +102,12 @@ class App extends Component {
     if (filterModel.length % pageCount === 0) return
 
     changeFilterModel(filterModel)
+    // scrollToLeft()
 
     // api.setFilterModel(filterModelGenerator(filterModel, pageCount))
   }
 
-  onWheel = e => {
+  const onWheel = e => {
     e.preventDefault()
     const container = document.getElementsByClassName(
       'ag-body-horizontal-scroll-viewport',
@@ -135,52 +121,46 @@ class App extends Component {
     })
   }
 
-  onGridSizeChanged = () => {
-    const { changeGridHeight } = this.props
-
-    changeGridHeight(this.gridRef.current.clientHeight)
+  const scrollToLeft = () => {
+    const container = document.getElementsByClassName(
+      'ag-body-horizontal-scroll-viewport',
+    )[0]
+    container.scrollLeft = 0
   }
 
-  render() {
-    const { pageCount, frameworkComponents } = this.state
-    const { rowData, rowsPerPage, gridHeight } = this.props
+  const onGridSizeChanged = () => changeGridHeight(gridRef.current.clientHeight)
 
-    const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
-    const formatRowData = formatData(rowData, rowsPerPage, pageCount)
-
-    return (
+  return (
+    <div onWheel={onWheel} style={{ overflow: 'hidden' }} ref={gridRef}>
       <div
-        onWheel={this.onWheel}
-        style={{ overflow: 'hidden' }}
-        ref={this.gridRef}
+        className="ag-theme-balham"
+        style={{
+          height: `${gridHeight}px`,
+          width: `100%`,
+        }}
       >
-        <div
-          className="ag-theme-balham"
-          style={{
-            height: `${gridHeight}px`,
-            width: `100vw`,
-          }}
-        >
-          <AgGridReact
-            columnDefs={formatColumnDefs}
-            rowData={formatRowData}
-            defaultColDef={defaultColDef}
-            onSortChanged={this.onSortChanged}
-            onFilterChanged={this.onFilterChanged}
-            onGridReady={this.onGridReady}
-            onGridSizeChanged={this.onGridSizeChanged}
-            domLayout="autoHeight"
-            frameworkComponents={frameworkComponents}
-          />
-        </div>
+        <AgGridReact
+          columnDefs={formatColumnDefs}
+          rowData={formatRowData}
+          defaultColDef={defaultColDef}
+          onSortChanged={onSortChanged}
+          onFilterChanged={onFilterChanged}
+          onGridReady={onGridReady}
+          onGridSizeChanged={onGridSizeChanged}
+          domLayout="autoHeight"
+          frameworkComponents={frameworkComponents}
+        />
       </div>
-    )
-  }
+    </div>
+  )
 }
 const mapStateToProps = state => ({
   rowData: dataSelector(state),
   rowsPerPage: rowsPerPageSelector(state),
   gridHeight: selectGridHeight(state),
+  pageCount: pageCountSelector(state),
+  allRowDataLength: selectRowDataLength(state),
+  filter: selectFilterModel(state),
 })
 
 const mapDispatchToProps = {
@@ -190,11 +170,19 @@ const mapDispatchToProps = {
   changeGridHeight,
 }
 
+App.propTypes = {
+  rowData: arrayOf(shape()),
+  allRowDataLength: number.isRequired,
+  gridHeight: number.isRequired,
+  rowsPerPage: number.isRequired,
+  pageCount: number.isRequired,
+  changeSortModel: func.isRequired,
+  changeFilterModel: func.isRequired,
+  changeGridHeight: func.isRequired,
+}
+
+App.defaultProps = {
+  rowData: [],
+}
+
 export default connect(mapStateToProps, mapDispatchToProps)(App)
-
-// 1. Save to Redux the sortModel
-// 2. Grid rowData should be coming from a selector
-// 3. If you have a reducer to save the sortModel, you can have a selector to get it
-// 4. rowData selector should be using the sortModel selector
-
-// 1. save sortState in this.state

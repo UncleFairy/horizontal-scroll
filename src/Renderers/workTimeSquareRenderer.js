@@ -11,7 +11,7 @@ export default class SquareRenderer extends Component {
 
   valueSquared() {
     if (isNaN(this.props.value)) return ''
-    return (((((this.props.value / 2) * 3) / 4) * 5) / 6) * 7
+    return `${Math.ceil(((this.props.value / 2) * 3) / 4 / 140)} days`
   }
 
   render() {

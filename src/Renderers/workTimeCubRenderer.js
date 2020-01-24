@@ -11,7 +11,7 @@ export default class CubRenderer extends Component {
 
   valueSquared() {
     if (isNaN(this.props.value)) return ''
-    return (((((this.props.value / 3) * 4) / 2) * 3) / 4) * 7
+    return` ${Math.ceil(((((this.props.value / 3) * 4) / 2)  / 140))} days`
   }
 
   render() {
