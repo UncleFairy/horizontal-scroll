@@ -5,13 +5,6 @@ export const addRowData = rowData => ({
   },
 })
 
-export const changeCof = cof => ({
-  type: 'CHANGE_COF',
-  payload: {
-    cof,
-  },
-})
-
 export const changeSortModel = sortModel => ({
   type: 'CHANGE_SORT_MODEL',
   payload: {

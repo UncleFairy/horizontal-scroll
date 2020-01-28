@@ -2,12 +2,14 @@ import { createSelector } from 'reselect'
 import _ from 'lodash'
 
 import { dataSort } from 'ColumnGroupScroll/utils'
-import { addRowData } from './actions'
+import {
+  filterModelGenerator,
+  formatFilterModel,
+} from 'ColumnGroupScroll/utils'
+
 import { ONE_PAGE } from '../constants'
 
 export const selectRowData = ({ rowData }) => rowData
-
-export const selectRowDataLength = ({ rowData }) => rowData.length
 
 export const selectSortModel = ({ sortModel }) => sortModel
 
@@ -44,6 +46,7 @@ export const rowsPerPageSelector = createSelector(
   dataSelector,
   (height, rowData) => {
     if (Math.floor((height - 100) / 28) > rowData.length) return rowData.length
+    if (Math.floor((height - 100) / 28) <= 0) return 1
     return Math.floor((height - 100) / 28)
   },
 )
@@ -51,8 +54,14 @@ export const rowsPerPageSelector = createSelector(
 export const pageCountSelector = createSelector(
   rowsPerPageSelector,
   dataSelector,
-  (rowsPerPage = 1, rowData) => {
+  (rowsPerPage, rowData) => {
     if (rowData.length <= rowsPerPage) return ONE_PAGE
     return Math.ceil(rowData.length / rowsPerPage)
   },
+)
+
+export const allGroupsFilterModelSelector = createSelector(
+  selectFilterModel,
+  pageCountSelector,
+  (filterModel, pageCount) => filterModelGenerator(filterModel, pageCount),
 )

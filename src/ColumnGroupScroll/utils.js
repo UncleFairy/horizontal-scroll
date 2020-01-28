@@ -1,6 +1,11 @@
 import _ from 'lodash'
 
-import { EMPTY_ARRAY, EMPTY_FILTER_MODEL, EMPTY_SORT_MODEL } from '../constants'
+import {
+  EMPTY_ARRAY,
+  EMPTY_FILTER_MODEL,
+  EMPTY_SORT_MODEL,
+  ONE_FILTER,
+} from '../constants'
 
 export const formatColumns = (columns, pageCount) => {
   if (_.isEmpty(columns)) return EMPTY_ARRAY
@@ -86,16 +91,86 @@ export const formatSortModel = sortState => {
 export const formatFilterModel = filterState => {
   if (_.isEmpty(filterState)) return EMPTY_FILTER_MODEL
 
-  const filterModel = []
+  let filterModel = []
   // @TODO filter one column function
   for (let i in filterState) {
-    filterModel.push({
-      ...filterState[i],
-      columnToFilter: i.split('_')[0],
-    })
+    filterModel = [
+      ...filterModel,
+      {
+        ...filterState[i],
+        columnToFilter: i.split('_')[0],
+      },
+    ]
   }
 
+  filterModel = filterModel.sort((a, b) =>
+    a['columnToFilter'] > b['columnToFilter'] ? -1 : 1,
+  )
+
   return filterModel
+}
+
+export const getSingleFilter = (filterModel, columnsToFilter, pageCount) => {
+  console.log(
+    columnsToFilter
+      .map(column =>
+        filterModel.filter(filter => filter.columnToFilter === column),
+      )
+      .filter(array => {
+        console.log(
+          array,
+          array.length === pageCount || array.length === 1,
+          pageCount,
+          'filter',
+        )
+        return array.length === pageCount || array.length === 1
+      })
+      .map(filterByColumn => getUniqueValue(filterByColumn)),
+    'getSingleFilter',
+  )
+  return columnsToFilter
+    .map(column =>
+      filterModel.filter(filter => filter.columnToFilter === column),
+    )
+    .filter(array => array.length === pageCount || array.length === 1)
+    .map(filterByColumn => getUniqueValue(filterByColumn))
+}
+
+export const isFilterModelChanged = (filterModel, currentFilterModel) => {
+  if (JSON.stringify(filterModel) !== JSON.stringify(currentFilterModel))
+    return true
+  return false
+}
+
+export const getFilterColumns = columnDefsModel =>
+  columnDefsModel
+    .filter(column => column.filter === true)
+    .map(column => column.field)
+
+const getUniqueValue = array => {
+  if (
+    JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
+    JSON.stringify(array[0]) !== JSON.stringify(array[2])
+  )
+    return array[0]
+
+  if (
+    JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
+    JSON.stringify(array[1]) !== JSON.stringify(array[2])
+  )
+    return array[1]
+
+  if (
+    JSON.stringify(array[0]) !== JSON.stringify(array[2]) &&
+    JSON.stringify(array[2]) !== JSON.stringify(array[1])
+  )
+    return array[2]
+
+  for (let i = 3; i < array.length; i++) {
+    if (JSON.stringify(array[i]) !== JSON.stringify(array[0])) return array[i]
+  }
+
+  return array[0]
 }
 
 const fromEntries = entries =>
@@ -128,3 +203,25 @@ const unionGroupData = (formatRowData, step) => {
 
   return groupFormatRowData
 }
+
+// if (
+//     JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
+//     JSON.stringify(array[0]) !== JSON.stringify(array[2])
+// )
+//   return array[0]
+// if (JSON.stringify(array[2])) return array[1]
+// if (
+//     JSON.stringify(array[0]) === JSON.stringify(array[1]) &&
+//     JSON.stringify(array[2])
+// )
+//   return array[2]
+//
+// let node = {}
+// for (let i = 3; i < array.length; i++) {
+//   if (JSON.stringify(array[i]) !== JSON.stringify(array[0])) {
+//     node = { ...array[i] }
+//     return
+//   }
+//   return node
+// }
+// return array[0]

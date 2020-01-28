@@ -1,7 +1,6 @@
-import React, { useRef } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 import { connect } from 'react-redux'
-import _ from 'lodash'
 import { arrayOf, func, number, shape } from 'prop-types'
 
 import {
@@ -10,7 +9,9 @@ import {
   formatSortModel,
   formatFilterModel,
   sortModelGenerator,
-  filterModelGenerator,
+  getSingleFilter,
+  isFilterModelChanged,
+  getFilterColumns,
 } from 'ColumnGroupScroll/utils'
 import {
   columnDefsModel,
@@ -29,7 +30,6 @@ import 'ag-grid-community/dist/styles/ag-theme-balham.css'
 import './app.css'
 
 import {
-  changeCof,
   changeSortModel,
   changeFilterModel,
   changeGridHeight,
@@ -38,13 +38,13 @@ import {
   dataSelector,
   pageCountSelector,
   rowsPerPageSelector,
-  selectFilterModel,
   selectGridHeight,
-  selectRowDataLength,
+  allGroupsFilterModelSelector,
 } from './redux/selector'
 import {
+  EMPTY_ARRAY,
   EMPTY_SORT_MODEL,
-  EMPTY_FILTER_MODEL,
+  ONE_FILTER,
   ONE_PAGE,
   ZERO_HEIGHT,
 } from './constants'
@@ -52,14 +52,15 @@ import {
 const App = ({
   rowData,
   gridHeight,
+  filterModel,
   pageCount,
   rowsPerPage,
   changeSortModel,
   changeFilterModel,
   changeGridHeight,
-  allRowDataLength,
 }) => {
   const gridRef = useRef(null)
+  const [gridApi, setGridApi] = useState(null)
 
   const frameworkComponents = {
     flagRenderer,
@@ -70,7 +71,16 @@ const App = ({
   const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
   const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
-  const onGridReady = ({ api }) => api.setGroupHeaderHeight(ZERO_HEIGHT)
+  useEffect(() => {
+    if (gridApi) gridApi.setFilterModel(filterModel)
+  }, [filterModel])
+
+  const onGridReady = ({ api }) => {
+    api.setGroupHeaderHeight(ZERO_HEIGHT)
+    setGridApi(api)
+  }
+
+  // console.log({ rowData, gridHeight, filterModel, pageCount, rowsPerPage })
 
   const onSortChanged = ({ api }) => {
     const sortState = api.getSortModel()
@@ -90,21 +100,42 @@ const App = ({
 
   const onFilterChanged = ({ api }) => {
     const filterState = api.getFilterModel()
-    const filterModel = formatFilterModel(filterState)
-
-    // if (_.isEmpty(filterModel) && rowData.length !== allRowDataLength) return
-
-    if (!filterModel.length) {
-      changeFilterModel(EMPTY_FILTER_MODEL)
+    console.log(filterState, 'filterState')
+    const currentFilterModel = formatFilterModel(filterState)
+    console.log(currentFilterModel)
+    if (
+      currentFilterModel.length === ONE_FILTER &&
+      pageCount === ONE_PAGE &&
+      rowData.length === EMPTY_ARRAY.length &&
+      !isFilterModelChanged(formatFilterModel(filterModel), currentFilterModel)
+    ) {
+      console.log('if 1')
       return
     }
-
-    if (filterModel.length % pageCount === 0) return
-
-    changeFilterModel(filterModel)
-    // scrollToLeft()
-
-    // api.setFilterModel(filterModelGenerator(filterModel, pageCount))
+    if (currentFilterModel.length === ONE_FILTER) {
+      changeFilterModel(currentFilterModel)
+      console.log('if 2')
+      return
+    }
+    console.log({
+      filterModel: formatFilterModel(filterModel),
+      currentFilterModel,
+    })
+    if (
+      !isFilterModelChanged(formatFilterModel(filterModel), currentFilterModel)
+    ) {
+      console.log('if 3')
+      return
+    }
+    console.log('4 part')
+    const columnsToFilter = getFilterColumns(columnDefsModel(true))
+    const singleFilterModel = getSingleFilter(
+      currentFilterModel,
+      columnsToFilter,
+      pageCount,
+    )
+    console.log(singleFilterModel, 'changeFilterModel')
+    changeFilterModel(singleFilterModel)
   }
 
   const onWheel = e => {
@@ -157,14 +188,12 @@ const App = ({
 const mapStateToProps = state => ({
   rowData: dataSelector(state),
   rowsPerPage: rowsPerPageSelector(state),
-  gridHeight: selectGridHeight(state),
   pageCount: pageCountSelector(state),
-  allRowDataLength: selectRowDataLength(state),
-  filter: selectFilterModel(state),
+  gridHeight: selectGridHeight(state),
+  filterModel: allGroupsFilterModelSelector(state),
 })
 
 const mapDispatchToProps = {
-  changeCof,
   changeSortModel,
   changeFilterModel,
   changeGridHeight,
@@ -172,7 +201,7 @@ const mapDispatchToProps = {
 
 App.propTypes = {
   rowData: arrayOf(shape()),
-  allRowDataLength: number.isRequired,
+  filterModel: shape(),
   gridHeight: number.isRequired,
   rowsPerPage: number.isRequired,
   pageCount: number.isRequired,
@@ -183,6 +212,7 @@ App.propTypes = {
 
 App.defaultProps = {
   rowData: [],
+  filterModel: {},
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)
