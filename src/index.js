@@ -13,7 +13,7 @@ const store = createStore(
   window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__(),
 )
 
-store.dispatch(addRowData(dataCreator(5000)))
+store.dispatch(addRowData(dataCreator(1000)))
 store.dispatch(changeGridHeight(600))
 
 ReactDOM.render(

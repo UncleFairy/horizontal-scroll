@@ -2,10 +2,7 @@ import { createSelector } from 'reselect'
 import _ from 'lodash'
 
 import { dataSort } from 'ColumnGroupScroll/utils'
-import {
-  filterModelGenerator,
-  formatFilterModel,
-} from 'ColumnGroupScroll/utils'
+import { filterModelGenerator } from 'ColumnGroupScroll/utils'
 
 import { ONE_PAGE } from '../constants'
 

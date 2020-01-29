@@ -22,7 +22,6 @@ import {
   workTimeSquareRenderer,
   workTimeCubRenderer,
 } from 'Renderers'
-import containFilter from 'Filters/containFilter'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
@@ -68,14 +67,13 @@ const App = ({
     flagRenderer,
     workTimeSquareRenderer,
     workTimeCubRenderer,
-    containFilter,
   }
   const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
   const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
   useEffect(() => {
     if (gridApi) gridApi.setFilterModel(filterModel)
-  }, [filterModel])
+  }, [filterModel, gridApi])
 
   const onGridReady = ({ api }) => {
     api.setGroupHeaderHeight(ZERO_HEIGHT)
@@ -110,7 +108,10 @@ const App = ({
     )
       return
 
-    if (currentFilterModel.length === ONE_FILTER) {
+    if (
+      currentFilterModel.length === ONE_FILTER &&
+      isFilterModelChanged(formatFilterModel(filterModel), currentFilterModel)
+    ) {
       scrollToLeft()
       changeFilterModel(currentFilterModel)
       return
