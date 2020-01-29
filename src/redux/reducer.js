@@ -6,6 +6,8 @@ export const reducer = (state = {}, action) => {
       return Object.assign({}, state, { cof: action.payload.cof })
     case 'CHANGE_SORT_MODEL':
       return Object.assign({}, state, { sortModel: action.payload.sortModel })
+    case 'SET_COLUMN_DEFS':
+      return Object.assign({}, state, { columnDefs: action.payload.columnDefs })
     case 'CHANGE_FILTER_MODEL':
       return Object.assign({}, state, {
         filterModel: action.payload.filterModel,

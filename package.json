@@ -21,7 +21,8 @@
     "react-scripts": "3.2.0",
     "react-scroll-horizontal": "^1.6.2",
     "redux": "^4.0.5",
-    "reselect": "^4.0.0"
+    "reselect": "^4.0.0",
+    "shortid": "^2.2.15"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",

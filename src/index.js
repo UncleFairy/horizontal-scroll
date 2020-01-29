@@ -4,9 +4,10 @@ import { createStore } from 'redux'
 import { Provider } from 'react-redux'
 
 import { reducer } from './redux/reducer'
-import { addRowData, changeGridHeight } from './redux/actions'
+import { addRowData, changeGridHeight, setColumnDefs } from './redux/actions'
 import { dataCreator } from './data'
 import App from './App'
+import { columnDefsModel } from './ColumnGroupScroll/columnDefsModel'
 
 const store = createStore(
   reducer,
@@ -15,6 +16,7 @@ const store = createStore(
 
 store.dispatch(addRowData(dataCreator(1000)))
 store.dispatch(changeGridHeight(600))
+store.dispatch(setColumnDefs(columnDefsModel(true)))
 
 ReactDOM.render(
   <Provider store={store}>

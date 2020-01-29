@@ -5,6 +5,13 @@ export const addRowData = rowData => ({
   },
 })
 
+export const setColumnDefs = columnDefs => ({
+  type: 'SET_COLUMN_DEFS',
+  payload: {
+    columnDefs,
+  },
+})
+
 export const changeSortModel = sortModel => ({
   type: 'CHANGE_SORT_MODEL',
   payload: {
@@ -25,4 +32,3 @@ export const changeGridHeight = gridHeight => ({
     gridHeight,
   },
 })
-

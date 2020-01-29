@@ -18,7 +18,7 @@ export const formatColumns = (columns, pageCount) => {
 export const formatData = (rowData, rowsPerPage, pageCount) => {
   if (_.isEmpty(rowData)) return EMPTY_ARRAY
 
-  const formatRowData = Array.from({ length: pageCount }, (_, i) =>
+  let formatRowData = Array.from({ length: pageCount }, (_, i) =>
     rowData.slice(i * rowsPerPage, i * rowsPerPage + rowsPerPage).map(item => {
       const itemKeys = Object.keys(item)
       const formatItemKeys = Object.assign(

@@ -4,8 +4,6 @@ import { connect } from 'react-redux'
 import { arrayOf, func, number, shape } from 'prop-types'
 
 import {
-  formatColumns,
-  formatData,
   formatSortModel,
   formatFilterModel,
   sortModelGenerator,
@@ -13,10 +11,7 @@ import {
   isFilterModelChanged,
   getFilterColumns,
 } from 'ColumnGroupScroll/utils'
-import {
-  columnDefsModel,
-  defaultColDef,
-} from 'ColumnGroupScroll/columnDefsModel'
+import { defaultColDef } from 'ColumnGroupScroll/columnDefsModel'
 import {
   flagRenderer,
   workTimeSquareRenderer,
@@ -34,12 +29,13 @@ import {
   changeGridHeight,
 } from './redux/actions'
 import {
-  dataSelector,
   pageCountSelector,
-  rowsPerPageSelector,
   selectGridHeight,
+  selectColumnDefs,
   allGroupsFilterModelSelector,
   selectFilterModel,
+  rowDataSelector,
+  columnDefsSelector,
 } from './redux/selector'
 import {
   EMPTY_ARRAY,
@@ -51,11 +47,12 @@ import {
 
 const App = ({
   rowData,
+  columnDefs,
   gridHeight,
   filterModel,
+  columnDefsModel,
   originalFilterModel,
   pageCount,
-  rowsPerPage,
   changeSortModel,
   changeFilterModel,
   changeGridHeight,
@@ -68,8 +65,6 @@ const App = ({
     workTimeSquareRenderer,
     workTimeCubRenderer,
   }
-  const formatColumnDefs = formatColumns(columnDefsModel(true), pageCount)
-  const formatRowData = formatData(rowData, rowsPerPage, pageCount)
 
   useEffect(() => {
     if (gridApi) gridApi.setFilterModel(filterModel)
@@ -122,7 +117,7 @@ const App = ({
     )
       return
 
-    const columnsToFilter = getFilterColumns(columnDefsModel(true))
+    const columnsToFilter = getFilterColumns(columnDefsModel)
     const singleFilterModel = getSingleFilter(
       currentFilterModel,
       columnsToFilter,
@@ -167,8 +162,8 @@ const App = ({
         }}
       >
         <AgGridReact
-          columnDefs={formatColumnDefs}
-          rowData={formatRowData}
+          columnDefs={columnDefs}
+          rowData={rowData}
           defaultColDef={defaultColDef}
           onSortChanged={onSortChanged}
           onFilterChanged={onFilterChanged}
@@ -181,9 +176,11 @@ const App = ({
     </div>
   )
 }
+
 const mapStateToProps = state => ({
-  rowData: dataSelector(state),
-  rowsPerPage: rowsPerPageSelector(state),
+  rowData: rowDataSelector(state),
+  columnDefs: columnDefsSelector(state),
+  columnDefsModel: selectColumnDefs(state),
   pageCount: pageCountSelector(state),
   gridHeight: selectGridHeight(state),
   filterModel: allGroupsFilterModelSelector(state),
@@ -198,10 +195,11 @@ const mapDispatchToProps = {
 
 App.propTypes = {
   rowData: arrayOf(shape()),
+  columnDefs: arrayOf(shape()),
   filterModel: shape(),
   originalFilterModel: arrayOf(shape()),
+  columnDefsModel: arrayOf(shape()).isRequired,
   gridHeight: number.isRequired,
-  rowsPerPage: number.isRequired,
   pageCount: number.isRequired,
   changeSortModel: func.isRequired,
   changeFilterModel: func.isRequired,
@@ -210,6 +208,7 @@ App.propTypes = {
 
 App.defaultProps = {
   rowData: [],
+  columnDefs: [],
   filterModel: {},
   originalFilterModel: [],
 }
