@@ -1,11 +1,6 @@
 import _ from 'lodash'
 
-import {
-  EMPTY_ARRAY,
-  EMPTY_FILTER_MODEL,
-  EMPTY_SORT_MODEL,
-  ONE_FILTER,
-} from '../constants'
+import { EMPTY_ARRAY, EMPTY_FILTER_MODEL, EMPTY_SORT_MODEL } from '../constants'
 
 export const formatColumns = (columns, pageCount) => {
   if (_.isEmpty(columns)) return EMPTY_ARRAY
@@ -92,7 +87,7 @@ export const formatFilterModel = filterState => {
   if (_.isEmpty(filterState)) return EMPTY_FILTER_MODEL
 
   let filterModel = []
-  // @TODO filter one column function
+
   for (let i in filterState) {
     filterModel = [
       ...filterModel,
@@ -110,31 +105,21 @@ export const formatFilterModel = filterState => {
   return filterModel
 }
 
-export const getSingleFilter = (filterModel, columnsToFilter, pageCount) => {
-  console.log(
-    columnsToFilter
-      .map(column =>
-        filterModel.filter(filter => filter.columnToFilter === column),
-      )
-      .filter(array => {
-        console.log(
-          array,
-          array.length === pageCount || array.length === 1,
-          pageCount,
-          'filter',
-        )
-        return array.length === pageCount || array.length === 1
-      })
-      .map(filterByColumn => getUniqueValue(filterByColumn)),
-    'getSingleFilter',
-  )
-  return columnsToFilter
+export const getSingleFilter = (
+  filterModel,
+  columnsToFilter,
+  pageCount,
+  originalFilterModel,
+) =>
+  columnsToFilter
     .map(column =>
       filterModel.filter(filter => filter.columnToFilter === column),
     )
     .filter(array => array.length === pageCount || array.length === 1)
-    .map(filterByColumn => getUniqueValue(filterByColumn))
-}
+    .map(filterByColumn =>
+      getUniqueValue(filterByColumn, originalFilterModel, pageCount),
+    )
+    .filter(filter => filter)
 
 export const isFilterModelChanged = (filterModel, currentFilterModel) => {
   if (JSON.stringify(filterModel) !== JSON.stringify(currentFilterModel))
@@ -142,36 +127,29 @@ export const isFilterModelChanged = (filterModel, currentFilterModel) => {
   return false
 }
 
+const getUniqueValue = (array, originalFilterModel, pageCount) => {
+  const originalFilter = originalFilterModel.filter(
+    filter => array[0].columnToFilter === filter.columnToFilter,
+  )[0]
+
+  if (!originalFilter) return array[0]
+
+  if (array.length === pageCount - 1) return null
+
+  if (pageCount === 1) return array[0]
+
+  const newFilterValue = array.filter(
+    filter => JSON.stringify(filter) !== JSON.stringify(originalFilter),
+  )
+
+  if (newFilterValue.length) return newFilterValue[0]
+  return array[0]
+}
+
 export const getFilterColumns = columnDefsModel =>
   columnDefsModel
     .filter(column => column.filter === true)
     .map(column => column.field)
-
-const getUniqueValue = array => {
-  if (
-    JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
-    JSON.stringify(array[0]) !== JSON.stringify(array[2])
-  )
-    return array[0]
-
-  if (
-    JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
-    JSON.stringify(array[1]) !== JSON.stringify(array[2])
-  )
-    return array[1]
-
-  if (
-    JSON.stringify(array[0]) !== JSON.stringify(array[2]) &&
-    JSON.stringify(array[2]) !== JSON.stringify(array[1])
-  )
-    return array[2]
-
-  for (let i = 3; i < array.length; i++) {
-    if (JSON.stringify(array[i]) !== JSON.stringify(array[0])) return array[i]
-  }
-
-  return array[0]
-}
 
 const fromEntries = entries =>
   entries.reduce((o, [key, value]) => ({ ...o, [key]: value }), {})
@@ -203,25 +181,3 @@ const unionGroupData = (formatRowData, step) => {
 
   return groupFormatRowData
 }
-
-// if (
-//     JSON.stringify(array[0]) !== JSON.stringify(array[1]) &&
-//     JSON.stringify(array[0]) !== JSON.stringify(array[2])
-// )
-//   return array[0]
-// if (JSON.stringify(array[2])) return array[1]
-// if (
-//     JSON.stringify(array[0]) === JSON.stringify(array[1]) &&
-//     JSON.stringify(array[2])
-// )
-//   return array[2]
-//
-// let node = {}
-// for (let i = 3; i < array.length; i++) {
-//   if (JSON.stringify(array[i]) !== JSON.stringify(array[0])) {
-//     node = { ...array[i] }
-//     return
-//   }
-//   return node
-// }
-// return array[0]

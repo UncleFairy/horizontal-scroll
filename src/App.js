@@ -40,6 +40,7 @@ import {
   rowsPerPageSelector,
   selectGridHeight,
   allGroupsFilterModelSelector,
+  selectFilterModel,
 } from './redux/selector'
 import {
   EMPTY_ARRAY,
@@ -53,6 +54,7 @@ const App = ({
   rowData,
   gridHeight,
   filterModel,
+  originalFilterModel,
   pageCount,
   rowsPerPage,
   changeSortModel,
@@ -80,8 +82,6 @@ const App = ({
     setGridApi(api)
   }
 
-  // console.log({ rowData, gridHeight, filterModel, pageCount, rowsPerPage })
-
   const onSortChanged = ({ api }) => {
     const sortState = api.getSortModel()
 
@@ -100,41 +100,36 @@ const App = ({
 
   const onFilterChanged = ({ api }) => {
     const filterState = api.getFilterModel()
-    console.log(filterState, 'filterState')
     const currentFilterModel = formatFilterModel(filterState)
-    console.log(currentFilterModel)
+
     if (
       currentFilterModel.length === ONE_FILTER &&
       pageCount === ONE_PAGE &&
       rowData.length === EMPTY_ARRAY.length &&
       !isFilterModelChanged(formatFilterModel(filterModel), currentFilterModel)
-    ) {
-      console.log('if 1')
+    )
       return
-    }
+
     if (currentFilterModel.length === ONE_FILTER) {
+      scrollToLeft()
       changeFilterModel(currentFilterModel)
-      console.log('if 2')
       return
     }
-    console.log({
-      filterModel: formatFilterModel(filterModel),
-      currentFilterModel,
-    })
+
     if (
       !isFilterModelChanged(formatFilterModel(filterModel), currentFilterModel)
-    ) {
-      console.log('if 3')
+    )
       return
-    }
-    console.log('4 part')
+
     const columnsToFilter = getFilterColumns(columnDefsModel(true))
     const singleFilterModel = getSingleFilter(
       currentFilterModel,
       columnsToFilter,
       pageCount,
+      originalFilterModel,
     )
-    console.log(singleFilterModel, 'changeFilterModel')
+
+    scrollToLeft()
     changeFilterModel(singleFilterModel)
   }
 
@@ -178,8 +173,8 @@ const App = ({
           onFilterChanged={onFilterChanged}
           onGridReady={onGridReady}
           onGridSizeChanged={onGridSizeChanged}
-          domLayout="autoHeight"
           frameworkComponents={frameworkComponents}
+          domLayout="autoHeight"
         />
       </div>
     </div>
@@ -191,6 +186,7 @@ const mapStateToProps = state => ({
   pageCount: pageCountSelector(state),
   gridHeight: selectGridHeight(state),
   filterModel: allGroupsFilterModelSelector(state),
+  originalFilterModel: selectFilterModel(state),
 })
 
 const mapDispatchToProps = {
@@ -202,6 +198,7 @@ const mapDispatchToProps = {
 App.propTypes = {
   rowData: arrayOf(shape()),
   filterModel: shape(),
+  originalFilterModel: arrayOf(shape()),
   gridHeight: number.isRequired,
   rowsPerPage: number.isRequired,
   pageCount: number.isRequired,
@@ -213,6 +210,7 @@ App.propTypes = {
 App.defaultProps = {
   rowData: [],
   filterModel: {},
+  originalFilterModel: [],
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(App)
