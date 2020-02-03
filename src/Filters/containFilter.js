@@ -1,62 +1,57 @@
-import React, { Component } from 'react'
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
+import { DelayInput } from 'react-delay-input'
+import _ from 'lodash'
 
-export default class ContainFilter extends Component {
-  constructor(props) {
-    super(props)
+export default forwardRef(({ api, filterChangedCallback, column }, ref) => {
+  const inputRef = useRef()
+  const [filterText, setFilterText] = useState('')
 
-    this.state = {
-      text: '',
-    }
+  useEffect(() => filterChangedCallback(), [filterText, filterChangedCallback])
 
-    this.onChange = this.onChange.bind(this)
+  const style = {
+    margin: '2px 0',
+    width: '200px',
+    height: '30px',
   }
-
-  isFilterActive() {
-    return (
-      this.state.text !== null &&
-      this.state.text !== undefined &&
-      this.state.text !== ''
-    )
-  }
-
-  doesFilterPass() {
-    return true
-  }
-
-  getModel() {
-    return { filter: this.state.text }
-  }
-
-  setModel(model) {
-    this.state.text = model ? model.filter : ''
-  }
-
-  onChange(event) {
-    let newValue = event.target.value
-    if (this.state.text !== newValue) {
-      this.setState(
-        {
-          text: newValue,
-        },
-        () => {
-          this.props.filterChangedCallback()
-        },
-      )
+  const onChange = e => {
+    const newValue = e.target.value
+    if (filterText !== newValue) {
+      setFilterText(newValue)
     }
   }
 
-  render() {
-    let style = {
-      backgroundColor: 'white',
-      width: '200px',
-      height: '30px',
-      marginTop: '6px',
-    }
+  useImperativeHandle(ref, () => ({
+    doesFilterPass: () => true,
 
-    return (
-      <div style={style}>
-        Filter: <input value={this.state.text} onChange={this.onChange} />
-      </div>
-    )
-  }
-}
+    getModel: () => {
+      if (filterText) return { filter: filterText }
+    },
+    setModel: model => {
+      console.log(model, column.colId)
+      if (!_.isEmpty(model)) setFilterText(model.filter)
+      else setFilterText('')
+    },
+    isFilterActive: () =>
+      filterText !== '' && filterText !== undefined && filterText !== null,
+  }))
+
+  return (
+    <div style={style}>
+      Filter:{' '}
+      <DelayInput
+        minLength={1}
+        delayTimeout={300}
+        value={filterText}
+        ref={inputRef}
+        onChange={onChange}
+        className="form-control"
+      />
+    </div>
+  )
+})

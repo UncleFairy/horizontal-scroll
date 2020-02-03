@@ -148,7 +148,9 @@ const getUniqueValue = (array, originalFilterModel, pageCount) => {
 
 export const getFilterColumns = columnDefsModel =>
   columnDefsModel
-    .filter(column => column.filter === true)
+    .filter(
+      column => column.filter === true || column.filter === 'ContainFilter',
+    )
     .map(column => column.field)
 
 const fromEntries = entries =>

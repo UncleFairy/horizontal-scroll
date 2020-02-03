@@ -9,13 +9,13 @@ export const columnDefsModel = cof => [
     headerName: 'Make',
     field: 'make',
     sortable: true,
-    filter: true,
+    filter: 'ContainFilter',
   },
   {
     headerName: 'Model',
     field: 'model',
     sortable: true,
-    filter: true,
+    filter: 'ContainFilter',
   },
   {
     headerName: 'Country',
@@ -27,7 +27,7 @@ export const columnDefsModel = cof => [
     headerName: 'Price',
     field: 'price',
     sortable: true,
-    filter: true,
+    filter: 'ContainFilter',
   },
   {
     headerName: 'Time to work',

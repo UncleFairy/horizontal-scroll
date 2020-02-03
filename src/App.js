@@ -17,6 +17,7 @@ import {
   workTimeSquareRenderer,
   workTimeCubRenderer,
 } from 'Renderers'
+import ContainFilter from 'Filters/containFilter'
 
 import 'ag-grid-community/dist/styles/ag-grid.css'
 import 'ag-grid-community/dist/styles/ag-theme-balham.css'
@@ -36,6 +37,7 @@ import {
   selectFilterModel,
   rowDataSelector,
   columnDefsSelector,
+  dataSelector,
 } from './redux/selector'
 import {
   EMPTY_ARRAY,
@@ -47,6 +49,7 @@ import {
 
 const App = ({
   rowData,
+  data,
   columnDefs,
   gridHeight,
   filterModel,
@@ -59,11 +62,14 @@ const App = ({
 }) => {
   const gridRef = useRef(null)
   const [gridApi, setGridApi] = useState(null)
-
+  console.log('******************RENDER***********************')
+  console.log(data.length, 'Data length')
+  console.log(filterModel, 'setFilterModel')
   const frameworkComponents = {
     flagRenderer,
     workTimeSquareRenderer,
     workTimeCubRenderer,
+    ContainFilter,
   }
 
   useEffect(() => {
@@ -92,9 +98,10 @@ const App = ({
   }
 
   const onFilterChanged = ({ api }) => {
+    console.log('***************ON_FILTER_CHANGED**********************')
     const filterState = api.getFilterModel()
     const currentFilterModel = formatFilterModel(filterState)
-
+    console.log(currentFilterModel, 'currentFilterModel')
     if (
       currentFilterModel.length === ONE_FILTER &&
       pageCount === ONE_PAGE &&
@@ -109,6 +116,7 @@ const App = ({
     ) {
       scrollToLeft()
       changeFilterModel(currentFilterModel)
+      console.log(currentFilterModel, 'changeFilterModel')
       return
     }
 
@@ -126,6 +134,7 @@ const App = ({
     )
 
     scrollToLeft()
+    console.log(singleFilterModel, 'changeFilterModel')
     changeFilterModel(singleFilterModel)
   }
 
@@ -185,6 +194,7 @@ const mapStateToProps = state => ({
   gridHeight: selectGridHeight(state),
   filterModel: allGroupsFilterModelSelector(state),
   originalFilterModel: selectFilterModel(state),
+  data: dataSelector(state),
 })
 
 const mapDispatchToProps = {
